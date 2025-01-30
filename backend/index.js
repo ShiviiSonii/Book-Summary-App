@@ -79,9 +79,9 @@ async function startServer() {
     }
   });
 
-  app.post("/summarize/:title", async (req, res) => {
+  app.post("/summarize/:title/:wordLen/:summaryType", async (req, res) => {
     try {
-      const { title } = req.params;
+      const { title, wordLen, summaryType } = req.params;
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -95,7 +95,7 @@ async function startServer() {
               {
                 parts: [
                   {
-                    text: `Give a summary of the book: ${title} in simple words`,
+                    text: `Give the summary of the book: ${title} in ${wordLen} simple words on the ${summaryType}-Based Summary`,
                   },
                 ],
               },
@@ -104,6 +104,39 @@ async function startServer() {
         }
       );
 
+      const result = await response.json();
+      res.json(result);
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).json({ error: "Something went wrong!" });
+    }
+  });
+
+  app.post("/suggestNextSummary/:bookName", async (req, res) => {
+    try {
+      const { bookName } = req.params;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `Suggest only one book name in which story is similar to this book: ${bookName}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+      console.log(response);
       const result = await response.json();
       res.json(result);
     } catch (error) {
