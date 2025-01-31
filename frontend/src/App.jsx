@@ -8,6 +8,9 @@ function App() {
   const [wordLen, setWordLen] = useState(250);
   const [summaryType, setSummaryType] = useState("Purpose");
   const [isSpeaking, setIsSpeaking] = useState(false); 
+  const [imageUrl, setImageUrl] = useState();
+  const [question, setQuestion] = useState(" ");
+  const [answer, setAnswer] = useState([])
 
   const fetchBookSummary = async () => {
     if (!bookName.trim()) {
@@ -30,7 +33,6 @@ function App() {
       }
 
       const data = await response.json();
-
       const summary =
         data.candidates?.[0]?.content?.parts?.[0]?.text || "No summary available.";
 
@@ -40,6 +42,7 @@ function App() {
       alert("Error fetching summary. Please try again.");
     } finally {
       setLoading(false);
+      getCoverImage();
     }
   };
 
@@ -75,6 +78,7 @@ function App() {
 
       const data = await response.json();
       setBookName("");
+      setImageUrl("");
       setBookName(data.candidates[0].content.parts[0].text);
     } catch (error) {
       console.error("Error fetching similar bookname:", error);
@@ -84,10 +88,28 @@ function App() {
     }
   };
 
+  const getCoverImage = async () => {
+    try {
+      const response = await fetch(`http://localhost:4000/coverImage/${bookName}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch cover image");
+      }
+
+      const data = await response.json();
+      setImageUrl(data.coverImage)
+    } catch (error) {
+      console.error("Error fetching cover image:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const handleSearchAgain = () => {
     stopSpeech();
     setBook(null);
     setBookName("");
+    setImageUrl("")
   };
 
   const startSpeech = () => {
@@ -104,6 +126,26 @@ function App() {
     speechSynthesis.cancel(); 
     setIsSpeaking(false); 
   };
+
+  const findAnswer = async () => {
+    try {
+      const response = await fetch(`http://localhost:4000/findAnswer/${bookName}/${book.summary}/${question}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to find answer of your question.");
+      }
+
+      const data = await response.json();
+      // console.log(data.candidates[0].content.parts[0].text)
+      setAnswer("")
+      setAnswer(data.candidates[0].content.parts[0].text)
+    } catch (error) {
+      console.error("Error fetching answer of your question:", error);
+    } finally {
+      setLoading(false);
+      setQuestion("");
+    }
+  }
 
   return (
     <div className="App">
@@ -136,6 +178,7 @@ function App() {
       ) : (
         <>
           <h2>{book.title}</h2>
+          <img src={imageUrl} alt="cover-img"/>
           <p>{book.summary}</p>
           <button onClick={handleSearchAgain}>Search Again</button>
           <button onClick={findSimilarBookName}>Find Similar</button>
@@ -145,6 +188,18 @@ function App() {
           ) : (
             <button onClick={stopSpeech}>Stop Reading</button>
           )}
+
+          <h2>Do you have any questioons?</h2>
+          <p>Please ask below.</p>
+          <input type="text" placeholder="Enter you question here" value={question} onChange={(e) => setQuestion(e.target.value)}/>
+          <button onClick={findAnswer}>Find Answer</button>
+
+          {
+            answer && 
+            <>
+             <p>{answer}</p>
+            </>
+          }
         </>
       )}
     </div>
