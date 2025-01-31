@@ -138,7 +138,7 @@ function App() {
       const data = await response.json();
       // console.log(data.candidates[0].content.parts[0].text)
       setAnswer("")
-      setAnswer(data.candidates[0].content.parts[0].text)
+      setAnswer([...answer,{question, answer: data.candidates[0].content.parts[0].text}])
     } catch (error) {
       console.error("Error fetching answer of your question:", error);
     } finally {
@@ -197,7 +197,13 @@ function App() {
           {
             answer && 
             <>
-             <p>{answer}</p>
+              {
+                answer.map((ans,index) => <div key={index}>
+                  <h3>{ans.question}</h3>
+                  <p>{ans.answer}</p>
+                </div>
+                )
+              }
             </>
           }
         </>
